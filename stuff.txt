@@ -1,0 +1,50 @@
+✅ Feature Breakdown & Tasks
+1. Mood Logging
+- [v] Create a Mood Selection UI (emoji buttons or icons: happy, sad, calm, excited, etc.)
+- [v] Add a text input for optional notes.
+- [v] Save mood + note in local storage (AsyncStorage or SQLite).
+- [v] Show a confirmation toast/snackbar after saving.
+
+2. Playlist Suggestions
+- [ ] Define mood → playlist mapping (static links first: Spotify/YouTube).
+- [ ] Display playlist card (cover image, title, “Open in Spotify” button).
+- [ ] Later: integrate Spotify API → fetch recommendations based on mood parameters (valence, energy, danceability).
+- [ ] Handle fallback if API fails (show static curated playlist).
+
+3. Mood History
+- [ ] Build a list view of past moods (emoji + note + date).
+- [ ] Add a chart visualization (line/bar chart of moods over time).
+- [ ] Weekly summary: “You felt happy 4 times this week.”
+- [ ] Option to delete/edit past entries.
+
+4. Reminders
+- [ ] Use Expo Notifications to schedule a daily reminder (“Log your mood today!”).
+- [ ] Add a settings option to change reminder time.
+- [ ] Toggle reminders on/off.
+
+5. Settings & Extras
+- [ ] Settings screen with:
+- Reminder time picker
+- Dark mode toggle
+- About app section
+- [ ] Optional: share mood chart as image.
+- [ ] Optional: simple onboarding screen (“Pick your mood daily, get music suggestions”).
+
+🛠️ Tech Tasks
+- [ ] Set up React Navigation (stack/tab navigation).
+- [ ] Create reusable components (MoodButton, PlaylistCard, Chart).
+- [ ] Implement local storage (AsyncStorage or SQLite).
+- [ ] Integrate Expo Notifications.
+- [ ] Add basic theming (light/dark mode).
+- [ ] Test on both Android & iOS simulators.
+
+📅 Suggested Build Order
+- Day 1–2 → Mood Log screen + storage
+- Day 3 → Playlist suggestions (static links)
+- Day 4 → History screen + chart
+- Day 5 → Notifications + settings
+- Day 6 → Polish UI + optional Spotify API integration
+- Day 7 → Testing, bug fixes, demo prep
+
+👉 This way, you’ll have a working MVP by midweek and can spend the last few days polishing or adding stretch features.
+Do you want me to draft the mood → playlist mapping table (e.g., Happy → “Happy Hits”, Sad → “Lo-Fi Chill”) so you can plug it in right away without worrying about API integration first?

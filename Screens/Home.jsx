@@ -1,10 +1,15 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Pressable } from 'react-native';
-import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../colors';
+import { useSelector } from 'react-redux';
+import useAppColors from '../Helpers/useAppColors';
 
 export default function Home({ navigation }) {
+  const colors = useAppColors();
+  const isDark = useSelector((state) => state.theme.isDark);
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -32,16 +37,15 @@ export default function Home({ navigation }) {
         </Pressable>
       </View>
 
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    justifyContent: 'center',
     paddingHorizontal: 26,
   },
 

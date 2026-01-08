@@ -1,29 +1,28 @@
-import {useState} from 'react';
+import { useState } from 'react';
 import { View, Text, Button, TextInput, StyleSheet, Pressable } from 'react-native';
-import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
-import { colors } from '../colors';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { useSelector } from 'react-redux';
+import useAppColors from '../Helpers/useAppColors';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export default function Auth ({ navigation }) {
+export default function Auth({ navigation }) {
 
-const [authUsername, setAuthUsername] = useState('');
-const [authPwd, setAuthPwd] = useState('');
+  const colors = useAppColors();
+  const isDark = useSelector((state) => state.theme.isDark);
+  const styles = createStyles(colors);
 
-return (
-    <SafeAreaView style={StyleSheet.container}>
-    <View style={styles.content}>
+  const [authUsername, setAuthUsername] = useState('');
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.content}>
         <TextInput
-            placeholder='username...'
-            onChangeText={setAuthUsername}
-            value={authUsername}
-            style={styles.textInput}
-        />
-        
-        <TextInput
-            placeholder='password...'
-            onChangeText={setAuthPwd}
-            value={authPwd}
-            style={styles.textInput}
+          placeholder='username...'
+          placeholderTextColor={colors.textSecondary}
+          onChangeText={setAuthUsername}
+          value={authUsername}
+          style={styles.textInput}
         />
 
         <Pressable onPress={() => navigation.navigate('Home')}>
@@ -34,23 +33,23 @@ return (
             <Text style={styles.buttonText}>Home</Text>
           </LinearGradient>
         </Pressable>
-    </View>
+      </View>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
     </SafeAreaView>
-);
+  );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    justifyContent: 'center',
     paddingHorizontal: 26,
   },
   content: {
-    padding: 30, 
-    margin: 30,
+    padding: 20,
+    margin: 20,
     borderWidth: 1,
-    borderColor: 'black',
+    borderColor: colors.accentPink,
     borderRadius: 25,
     flexDirection: 'column',
     gap: 10,
@@ -63,6 +62,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     maxWidth: 'auto',
     borderColor: colors.accentPink,
+    color: colors.textPrimary,
   },
   button: {
     padding: 12,

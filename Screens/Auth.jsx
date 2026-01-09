@@ -15,29 +15,43 @@ export default function Auth({ navigation, route }) {
   const [authUsername, setAuthUsername] = useState('');
 
   // Get moodFromRoute if passed
-  const moodFromRoute = route.params?.moodFromRoute;
+  // const moodFromRoute = route.params?.moodFromRoute;
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <View style={styles.content}>
+        <View style={styles.headerContainer}>
+          <Text style={styles.title}>Welcome</Text>
+          <Text style={styles.subtitle}>What should we call you?</Text>
+        </View>
+
         <TextInput
-          placeholder='username...'
+          placeholder='Your name...'
           placeholderTextColor={colors.textSecondary}
           onChangeText={setAuthUsername}
           value={authUsername}
           style={styles.textInput}
+          autoCapitalize="words"
         />
 
-        <Pressable onPress={() => navigation.navigate('Home', { moodFromRoute })}>
+        <Pressable
+          onPress={() => navigation.navigate('Home', { authUsername })}
+          style={({ pressed }) => [
+            styles.buttonContainer,
+            { transform: [{ scale: pressed ? 0.98 : 1 }] }
+          ]}
+        >
           <LinearGradient
-            colors={colors.gradientSecondary}
+            colors={colors.gradientPurple}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
             style={styles.button}
           >
-            <Text style={styles.buttonText}>Home</Text>
+            <Text style={styles.buttonText}>Get Started</Text>
           </LinearGradient>
         </Pressable>
       </View>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
     </SafeAreaView>
   );
 }
@@ -46,37 +60,57 @@ const createStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingHorizontal: 26,
   },
   content: {
-    padding: 20,
-    margin: 20,
-    borderWidth: 1,
-    borderColor: colors.accentPink,
-    borderRadius: 25,
-    flexDirection: 'column',
-    gap: 10,
-    maxWidth: '100%',
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 24,
+  },
+  headerContainer: {
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 42,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    marginBottom: 8,
+    letterSpacing: -1,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
   textInput: {
-    padding: 14,
-    margin: 10,
-    borderWidth: 1,
-    borderRadius: 6,
-    maxWidth: 'auto',
-    borderColor: colors.accentPink,
+    backgroundColor: colors.surface,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    fontSize: 16,
     color: colors.textPrimary,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  buttonContainer: {
+    marginTop: 10,
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: colors.accentPurple,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   button: {
-    padding: 12,
-    margin: 8,
+    paddingVertical: 18,
     alignItems: 'center',
-    elevation: 4,
-    borderRadius: 12,
+    justifyContent: 'center',
   },
   buttonText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#FFFFFF', // clean contrast
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
 });

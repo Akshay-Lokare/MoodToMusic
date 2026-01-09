@@ -1,14 +1,18 @@
-/**
- * Spotify API Endpoints Configuration
- * Centralized API endpoint management
- */
+const buildLanguageQuery = (query, language) => {
+    if (language === 'english') {
+        return `${query} english playlist`;
+    }
+
+    if (language === 'hindi') {
+        return `${query} hindi playlist`;
+    }
+    return query;
+}
 
 export const SPOTIFY_API = {
-    // Base URLs
     BASE_URL: 'https://api.spotify.com/v1',
     AUTH_URL: 'https://accounts.spotify.com/api/token',
 
-    // Authentication
     getToken: () => ({
         url: 'https://accounts.spotify.com/api/token',
         method: 'POST',
@@ -18,11 +22,22 @@ export const SPOTIFY_API = {
         body: 'grant_type=client_credentials',
     }),
 
-    // Search
-    searchPlaylists: (query, limit = 20) => ({
-        url: `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=playlist&limit=${limit}`,
-        method: 'GET',
-    }),
+    searchPlaylists: (query, limit = 20, options = {}) => {
+        const {
+            language = 'english',
+            market = 'US',
+        } = options;
+
+        const finalQuery = buildLanguageQuery(query, language);
+
+        return {
+            url: `https://api.spotify.com/v1/search?q=${encodeURIComponent(
+                finalQuery
+            )}&type=playlist&limit=${limit}&market=${market}`,
+            method: 'GET',
+        };
+    },
+
 
     searchTracks: (query, limit = 20) => ({
         url: `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}`,
@@ -34,7 +49,6 @@ export const SPOTIFY_API = {
         method: 'GET',
     }),
 
-    // Playlists
     getPlaylist: (playlistId) => ({
         url: `https://api.spotify.com/v1/playlists/${playlistId}`,
         method: 'GET',
@@ -45,7 +59,6 @@ export const SPOTIFY_API = {
         method: 'GET',
     }),
 
-    // Recommendations
     getRecommendations: (params) => {
         const queryParams = new URLSearchParams(params).toString();
         return {
@@ -54,7 +67,6 @@ export const SPOTIFY_API = {
         };
     },
 
-    // Browse
     getFeaturedPlaylists: (limit = 20) => ({
         url: `https://api.spotify.com/v1/browse/featured-playlists?limit=${limit}`,
         method: 'GET',
@@ -71,39 +83,37 @@ export const SPOTIFY_API = {
     }),
 };
 
-/**
- * Helper to log API request details for Postman testing
- */
-export const logAPIRequest = (endpoint, token = null) => {
-    console.log('\n========================================');
-    console.log('📡 SPOTIFY API REQUEST');
-    console.log('========================================');
-    console.log('Method:', endpoint.method);
-    console.log('URL:', endpoint.url);
+// Helper to log API request details for Postman testing
+// export const logAPIRequest = (endpoint, token = null) => {
+//     console.log('\n========================================');
+//     console.log('📡 SPOTIFY API REQUEST');
+//     console.log('========================================');
+//     console.log('Method:', endpoint.method);
+//     console.log('URL:', endpoint.url);
 
-    if (endpoint.headers) {
-        console.log('\nHeaders:');
-        Object.entries(endpoint.headers).forEach(([key, value]) => {
-            console.log(`  ${key}: ${value}`);
-        });
-    }
+//     if (endpoint.headers) {
+//         console.log('\nHeaders:');
+//         Object.entries(endpoint.headers).forEach(([key, value]) => {
+//             console.log(`  ${key}: ${value}`);
+//         });
+//     }
 
-    if (token) {
-        console.log('\nAuthorization:');
-        console.log(`  Bearer ${token}`);
-    }
+//     if (token) {
+//         console.log('\nAuthorization:');
+//         console.log(`  Bearer ${token}`);
+//     }
 
-    if (endpoint.body) {
-        console.log('\nBody:');
-        console.log(`  ${endpoint.body}`);
-    }
+//     if (endpoint.body) {
+//         console.log('\nBody:');
+//         console.log(`  ${endpoint.body}`);
+//     }
 
-    console.log('\n🔧 POSTMAN SETUP:');
-    console.log('1. Method:', endpoint.method);
-    console.log('2. URL:', endpoint.url);
-    if (token) {
-        console.log('3. Headers:');
-        console.log('   Authorization: Bearer', token);
-    }
-    console.log('========================================\n');
-};
+//     console.log('\n🔧 POSTMAN SETUP:');
+//     console.log('1. Method:', endpoint.method);
+//     console.log('2. URL:', endpoint.url);
+//     if (token) {
+//         console.log('3. Headers:');
+//         console.log('   Authorization: Bearer', token);
+//     }
+//     console.log('========================================\n');
+// };

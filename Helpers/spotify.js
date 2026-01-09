@@ -1,17 +1,10 @@
-/**
- * Spotify Helper - Alternative Authentication
- * Uses a workaround when you can't create Spotify apps
- */
-
 import { SPOTIFY_API, logAPIRequest } from '../config/spotifyAPI';
 
 // Store the current access token in memory
 let cachedAccessToken = null;
 let tokenExpiryTime = null;
 
-/**
- * Get Spotify access token using Client Credentials Flow
- */
+
 export const getSpotifyAccessToken = async () => {
     try {
         // Check if we have a valid cached token
@@ -22,7 +15,6 @@ export const getSpotifyAccessToken = async () => {
 
         console.log('[Spotify Auth] Fetching new access token...');
 
-        // Use environment variables or hardcoded fallbacks
         const CLIENT_ID = process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID;
         const CLIENT_SECRET = process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_SECRET;
 
@@ -57,10 +49,8 @@ export const getSpotifyAccessToken = async () => {
         tokenExpiryTime = Date.now() + ((data.expires_in - 300) * 1000);
 
         console.log('[Spotify Auth] ✅ New token obtained');
-        console.log('========================================');
-        console.log('🔑 ACCESS TOKEN (copy for Postman):');
+        // console.log('🔑 ACCESS TOKEN:');
         console.log(cachedAccessToken);
-        console.log('========================================');
         console.log('[Spotify Auth] Expires in:', data.expires_in, 'seconds');
 
         return cachedAccessToken;
@@ -70,31 +60,14 @@ export const getSpotifyAccessToken = async () => {
     }
 };
 
-/**
- * Use a manually provided token (from Spotify Console)
- */
-export const useManualToken = (token) => {
-    cachedAccessToken = token;
-    // Set expiry to 1 hour from now
-    tokenExpiryTime = Date.now() + (3600 * 1000);
-    console.log('[Spotify Auth] Manual token set');
-    return token;
-};
 
-/**
- * Clear cached token (useful for testing or when token is invalid)
- */
 export const clearCachedToken = () => {
     cachedAccessToken = null;
     tokenExpiryTime = null;
     console.log('[Spotify Auth] Cached token cleared');
 };
 
-/**
- * Search for mood-based playlists
- * Simple search using mood keywords
- */
-export const searchMoodPlaylists = async (mood, token = null, limit = 20) => {
+export const searchMoodPlaylists = async (mood, token = null, limit = 20, options = {}) => {
     try {
         console.log(`[Spotify] Searching playlists for mood: ${mood}`);
 
@@ -107,10 +80,10 @@ export const searchMoodPlaylists = async (mood, token = null, limit = 20) => {
             token = await getSpotifyAccessToken();
         }
 
-        const endpoint = SPOTIFY_API.searchPlaylists(mood, limit);
+        const endpoint = SPOTIFY_API.searchPlaylists(mood, limit, options);
 
-        // Log API request for Postman testing
-        logAPIRequest(endpoint, token);
+        // for Postman testing
+        // logAPIRequest(endpoint, token); --- uncomment stuff from sporifyAPIs page
 
         const startTime = Date.now();
 
@@ -132,7 +105,7 @@ export const searchMoodPlaylists = async (mood, token = null, limit = 20) => {
             if (response.status === 401) {
                 clearCachedToken();
                 console.log('\n⚠️ Token expired or invalid!');
-                console.log('Get a new token from: https://developer.spotify.com/console/get-search-item/');
+                // console.log('Get a new token from: https://developer.spotify.com/console/get-search-item/');
             }
 
             throw new Error(`Spotify API error: ${response.status}`);
@@ -152,9 +125,6 @@ export const searchMoodPlaylists = async (mood, token = null, limit = 20) => {
     }
 };
 
-/**
- * Get playlist tracks
- */
 export const getPlaylistTracks = async (playlistId, token = null, limit = 50) => {
     try {
         console.log(`[Spotify] Getting tracks for playlist: ${playlistId}`);
@@ -164,7 +134,7 @@ export const getPlaylistTracks = async (playlistId, token = null, limit = 50) =>
             token = await getSpotifyAccessToken();
         }
 
-        const endpoint = SPOTIFY_API.getPlaylistTracks(playlistId, limit);
+        const endpoint = SPOTIFY_API.getPlaylistTracks(playlistId, limit, options);
 
         // Log API request for Postman testing
         logAPIRequest(endpoint, token);

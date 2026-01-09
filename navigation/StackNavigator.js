@@ -1,5 +1,7 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useSelector } from "react-redux";
+import { Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import useAppColors from "../Helpers/useAppColors";
 
 import Auth from "../Screens/Auth";
@@ -15,7 +17,7 @@ export default function StackNavigator() {
 
   return (
     <Stack.Navigator
-      initialRouteName="Home"
+      initialRouteName="Auth"
       screenOptions={{
         headerTitleAlign: 'center',
         headerStyle: {
@@ -36,7 +38,17 @@ export default function StackNavigator() {
       <Stack.Screen
         name="Home"
         component={Home}
-        options={{ title: 'Mood Music 🎧' }}
+        options={({ navigation }) => ({
+          title: 'Mood Music',
+          headerRight: () => (
+            <Pressable
+              onPress={() => navigation.navigate('Auth')}
+              style={{ marginRight: 10 }}
+            >
+              <Ionicons name="log-out-outline" size={24} color={colors.accentRed} />
+            </Pressable>
+          ),
+        })}
       />
       <Stack.Screen
         name="Settings"

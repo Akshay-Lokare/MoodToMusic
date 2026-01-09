@@ -5,7 +5,6 @@ const moodSlice = createSlice({
     initialState: {
         currentMood: null, // Current selected mood
         savedMood: null,   // Last saved mood from Settings
-        notes: '',         // Notes about the mood
     },
     reducers: {
         setCurrentMood(state, action) {
@@ -15,17 +14,13 @@ const moodSlice = createSlice({
         saveMood(state, action) {
             state.savedMood = action.payload.mood;
             state.currentMood = action.payload.mood;
-            if (action.payload.notes !== undefined) {
-                state.notes = action.payload.notes;
-            }
         },
 
         clearMood(state) {
             state.currentMood = null;
             state.savedMood = null;
-            state.notes = '';
         },
-        
+
     },
 });
 

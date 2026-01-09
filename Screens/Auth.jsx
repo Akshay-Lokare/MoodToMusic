@@ -13,26 +13,26 @@ export default function Auth({ navigation, route }) {
   const styles = createStyles(colors);
 
   const [authUsername, setAuthUsername] = useState('');
-
-  // Get moodFromRoute if passed
-  // const moodFromRoute = route.params?.moodFromRoute;
+  const [isFocesed, setIsFocused] = useState(false);
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
+
       <View style={styles.content}>
         <View style={styles.headerContainer}>
+
           <Text style={styles.title}>Welcome</Text>
           <Text style={styles.subtitle}>What should we call you?</Text>
         </View>
 
         <TextInput
-          placeholder='Your name...'
+          placeholder='Nickname...'
           placeholderTextColor={colors.textSecondary}
           onChangeText={setAuthUsername}
           value={authUsername}
-          style={styles.textInput}
-          autoCapitalize="words"
+          style={[styles.textInput, { borderColor: isFocesed ? colors.accentPurple : 'white' }]}
+          onFocus={() => setIsFocused(true)}
         />
 
         <Pressable
@@ -63,7 +63,6 @@ const createStyles = (colors) => StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
     paddingHorizontal: 32,
     gap: 24,
   },

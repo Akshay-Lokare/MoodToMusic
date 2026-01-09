@@ -1,4 +1,5 @@
 const buildLanguageQuery = (query, language) => {
+    // using this for lang selection
     if (language === 'english') {
         return `${query} english playlist`;
     }
@@ -9,6 +10,7 @@ const buildLanguageQuery = (query, language) => {
     return query;
 }
 
+// all helper functions
 export const SPOTIFY_API = {
     BASE_URL: 'https://api.spotify.com/v1',
     AUTH_URL: 'https://accounts.spotify.com/api/token',
@@ -22,18 +24,21 @@ export const SPOTIFY_API = {
         body: 'grant_type=client_credentials',
     }),
 
+    // Input: Takes a query (mood), limit (how many), and options (language, market, offset)
     searchPlaylists: (query, limit = 20, options = {}) => {
         const {
             language = 'english',
             market = 'US',
+            offset = 0,
         } = options;
 
         const finalQuery = buildLanguageQuery(query, language);
+        // https://api.spotify.com/v1/search?q=Sad%20hindi%20playlist&type=playlist&limit=5&market=IN&offset=0
 
         return {
             url: `https://api.spotify.com/v1/search?q=${encodeURIComponent(
                 finalQuery
-            )}&type=playlist&limit=${limit}&market=${market}`,
+            )}&type=playlist&limit=${limit}&market=${market}&offset=${offset}`,
             method: 'GET',
         };
     },

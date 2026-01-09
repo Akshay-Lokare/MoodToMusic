@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSelector } from 'react-redux';
 import useAppColors from '../Helpers/useAppColors';
 import { searchMoodPlaylists } from '../Helpers/spotify';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function MoodPlaylists({ route, navigation }) {
     const colors = useAppColors();
@@ -31,12 +32,14 @@ export default function MoodPlaylists({ route, navigation }) {
     const [playlists, setPlaylists] = useState([]);
     const [error, setError] = useState(null);
     const [language, setLanguage] = useState('english');
+    const [offset, setOffset] = useState(0);
 
     // Update local mood when redux/route params change
     useEffect(() => {
         const newMood = moodFromRedux || moodFromRoute; // either from redux of localStorage
         if (newMood && newMood !== mood) {
             setMood(newMood);
+            setOffset(0); // Reset offset on new mood
         }
     }, [moodFromRedux, moodFromRoute]);
 
@@ -50,7 +53,7 @@ export default function MoodPlaylists({ route, navigation }) {
             setLoading(false);
             setError('No mood selected');
         }
-    }, [mood, language]);
+    }, [mood, language, offset]);
 
     const loadPlaylists = async () => {
         try {
@@ -58,13 +61,14 @@ export default function MoodPlaylists({ route, navigation }) {
             setError(null);
 
             const startTime = Date.now();
-            console.log('[MoodPlaylists] 🔍 Loading playlists for mood:', mood);
+            console.log(`[MoodPlaylists] 🔍 Loading playlists for mood: ${mood}, offset: ${offset}`);
 
             // Reduced limit to x items for testing
             const data = await Promise.race([
                 searchMoodPlaylists(mood, null, 5, {
                     language,
                     market: language === 'english' ? 'US' : 'IN',
+                    offset: offset,
                 }),
                 new Promise((_, reject) =>
                     setTimeout(() => reject(new Error('Request timeout - taking too long')), 15000)
@@ -158,10 +162,27 @@ export default function MoodPlaylists({ route, navigation }) {
             <StatusBar style={isDark ? 'light' : 'dark'} />
 
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>{mood} mood playlists for {authUsername || 'Hooman'}</Text>
-                <Text style={styles.headerSubtitle}>
-                    {playlists.length} playlists found
-                </Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.headerTitle}>{mood} mood playlists for {authUsername || 'Hooman'}</Text>
+                        <Text style={styles.headerSubtitle}>
+                            {playlists.length} playlists found
+                        </Text>
+                    </View>
+                    <Pressable
+                        onPress={() => setOffset(prev => prev + 5)}
+                        style={({ pressed }) => ({
+                            backgroundColor: colors.surface,
+                            padding: 10,
+                            borderRadius: 50,
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                            opacity: pressed ? 0.7 : 1,
+                        })}
+                    >
+                        <Ionicons name="refresh" size={20} color={colors.accentPurple} />
+                    </Pressable>
+                </View>
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, marginVertical: 12 }}>
@@ -173,7 +194,10 @@ export default function MoodPlaylists({ route, navigation }) {
 
                 <Switch
                     value={language === 'hindi'}
-                    onValueChange={(val) => setLanguage(val ? 'hindi' : 'english')}
+                    onValueChange={(val) => {
+                        setLanguage(val ? 'hindi' : 'english');
+                        setOffset(0);
+                    }}
                     trackColor={{ false: colors.border, true: colors.accentPink }}
                     thumbColor={colors.accentPink}
                     style={{ marginHorizontal: 12 }}

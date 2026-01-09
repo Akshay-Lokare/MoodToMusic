@@ -18,11 +18,16 @@ export const getSpotifyAccessToken = async () => {
         const CLIENT_ID = process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID;
         const CLIENT_SECRET = process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_SECRET;
 
+        // 2. Prepare Credentials
+        // Spotify requires "Basic Auth" which is Base64 encoded ID:Secret
         const credentials = `${CLIENT_ID}:${CLIENT_SECRET}`;
-        const encodedCredentials = btoa(credentials); // Base64 encode
+        const encodedCredentials = btoa(credentials); //base 64 encrypt
 
         console.log('[Spotify Auth] Client ID:', CLIENT_ID);
 
+        // 3. Request Token
+        // POST request to https://accounts.spotify.com/api/token
+        // Grant type 'client_credentials' gives us permission to read public data
         const response = await fetch('https://accounts.spotify.com/api/token', {
             method: 'POST',
             headers: {
@@ -137,7 +142,7 @@ export const getPlaylistTracks = async (playlistId, token = null, limit = 50) =>
         const endpoint = SPOTIFY_API.getPlaylistTracks(playlistId, limit, options);
 
         // Log API request for Postman testing
-        logAPIRequest(endpoint, token);
+        // logAPIRequest(endpoint, token);
 
         const response = await fetch(endpoint.url, {
             method: endpoint.method,

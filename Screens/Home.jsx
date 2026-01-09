@@ -1,12 +1,16 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { StyleSheet, Text, View, Pressable, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSelector } from 'react-redux';
 import useAppColors from '../Helpers/useAppColors';
 import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 
 export default function Home({ navigation, route }) {
+
+  const [count, setCount] = useState(0);
+
   const colors = useAppColors();
   const isDark = useSelector((state) => state.theme.isDark);
   const styles = createStyles(colors);
@@ -14,60 +18,95 @@ export default function Home({ navigation, route }) {
   // Get username from Auth
   const authUsername = route.params?.authUsername;
 
+  const countIncr = () => {
+    setCount(count + 1);
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Hello,</Text>
-          <Text style={styles.username}>{authUsername || 'Guest'}</Text>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>Hello,</Text>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => countIncr()}
+            >
+              <Text style={styles.username}>{authUsername || 'Hooman'}</Text>
+            </TouchableOpacity>
+
+          </View>
         </View>
-      </View>
 
-      <Text style={styles.sectionTitle}>What would you like to do?</Text>
+        <View style={styles.grid}>
 
-      <View style={styles.grid}>
-
-        <Pressable
-          onPress={() => navigation.navigate('MoodPlaylists', { authUsername })}
-          style={({ pressed }) => [
-            styles.cardContainer,
-            { transform: [{ scale: pressed ? 0.98 : 1 }] }
-          ]}
-        >
-          <LinearGradient
-            colors={colors.gradientPurple}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.card}
+          <Pressable
+            onPress={() => navigation.navigate('MoodPlaylists', { authUsername })}
+            style={({ pressed }) => [
+              styles.cardContainer,
+              { transform: [{ scale: pressed ? 0.98 : 1 }] }
+            ]}
           >
-            <Ionicons name="musical-notes" size={32} color="white" />
-            <Text style={styles.cardTitle}>Find Music</Text>
-            <Text style={styles.cardSubtitle}>Based on your mood</Text>
-          </LinearGradient>
-        </Pressable>
+            <LinearGradient
+              colors={colors.gradientPurple}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.card}
+            >
+              <Ionicons name="musical-notes" size={32} color="white" />
+              <Text style={styles.cardTitle}>Find Music</Text>
+              <Text style={styles.cardSubtitle}>Based on your mood</Text>
+            </LinearGradient>
+          </Pressable>
 
 
-        <Pressable
-          onPress={() => navigation.navigate('Settings')}
-          style={({ pressed }) => [
-            styles.cardContainer,
-            { transform: [{ scale: pressed ? 0.98 : 1 }] }
-          ]}
-        >
-          <LinearGradient
-            colors={colors.gradientPrimary}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.card}
+          <Pressable
+            onPress={() => navigation.navigate('Settings')}
+            style={({ pressed }) => [
+              styles.cardContainer,
+              { transform: [{ scale: pressed ? 0.98 : 1 }] }
+            ]}
           >
-            <Ionicons name="settings-sharp" size={32} color="white" />
-            <Text style={styles.cardTitle}>Settings</Text>
-            <Text style={styles.cardSubtitle}>Theme & Preferences</Text>
-          </LinearGradient>
-        </Pressable>
-      </View>
+            <LinearGradient
+              colors={colors.gradientPrimary}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.card}
+            >
+              <Ionicons name="settings-sharp" size={32} color="white" />
+              <Text style={styles.cardTitle}>Settings</Text>
+              <Text style={styles.cardSubtitle}>Theme & Preferences</Text>
+
+            </LinearGradient>
+          </Pressable>
+
+          {count >= 7 && (
+            <Pressable
+              onPress={() => navigation.navigate('Easter')}
+              style={({ pressed }) => [
+                styles.cardContainer,
+                { transform: [{ scale: pressed ? 0.98 : 1 }] }
+              ]}
+            >
+              <LinearGradient
+                colors={colors.gradientSecondary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.card}
+              >
+                <Ionicons name="egg-sharp" size={32} color="white" />
+                <Text style={styles.cardTitle}>Mystery Easter Egg</Text>
+                <Text style={styles.cardSubtitle}>What could it be???</Text>
+
+              </LinearGradient>
+            </Pressable>
+          )}
+
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

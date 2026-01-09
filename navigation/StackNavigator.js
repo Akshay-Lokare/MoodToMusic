@@ -8,6 +8,7 @@ import Auth from "../Screens/Auth";
 import Home from "../Screens/Home";
 import Settings from "../Screens/Settings";
 import MoodPlaylists from "../Screens/MoodPlaylists";
+import Easter from "../Screens/Easter";
 
 const Stack = createNativeStackNavigator();
 
@@ -59,6 +60,11 @@ export default function StackNavigator() {
         name="MoodPlaylists"
         component={MoodPlaylists}
         options={{ title: 'Mood Music' }}
+      />
+      <Stack.Screen
+        name="Easter"
+        component={Easter}
+        options={{ title: '???' }}
       />
     </Stack.Navigator>
   );

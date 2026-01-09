@@ -1,0 +1,28 @@
+{
+    "playlists": {
+        "items": [
+            {
+                "id": "37i9dQZF1DXdbXr747d",
+                "name": "Sad Hindi Melodies",
+                "description": "Heartbreaking tunes...",
+                "external_urls": {
+                    "spotify": "https://open.spotify.com/playlist/..."
+                },
+                "images": [
+                    {
+                        "url": "https://i.scdn.co/image/..."
+                    }
+                ],
+                "tracks": {
+                    "total": 50,
+                    "href": "https://api.spotify.com/v1/playlists/.../tracks"
+                },
+                "owner": {
+                    "display_name": "Spotify"
+                }
+            },
+            {},
+            {}
+        ]
+    }
+}

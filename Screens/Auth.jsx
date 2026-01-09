@@ -6,13 +6,16 @@ import { useSelector } from 'react-redux';
 import useAppColors from '../Helpers/useAppColors';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export default function Auth({ navigation }) {
+export default function Auth({ navigation, route }) {
 
   const colors = useAppColors();
   const isDark = useSelector((state) => state.theme.isDark);
   const styles = createStyles(colors);
 
   const [authUsername, setAuthUsername] = useState('');
+
+  // Get moodFromRoute if passed
+  const moodFromRoute = route.params?.moodFromRoute;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -25,7 +28,7 @@ export default function Auth({ navigation }) {
           style={styles.textInput}
         />
 
-        <Pressable onPress={() => navigation.navigate('Home')}>
+        <Pressable onPress={() => navigation.navigate('Home', { moodFromRoute })}>
           <LinearGradient
             colors={colors.gradientSecondary}
             style={styles.button}

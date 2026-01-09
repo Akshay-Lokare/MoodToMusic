@@ -5,10 +5,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSelector } from 'react-redux';
 import useAppColors from '../Helpers/useAppColors';
 
-export default function Home({ navigation }) {
+export default function Home({ navigation, route }) {
   const colors = useAppColors();
   const isDark = useSelector((state) => state.theme.isDark);
   const styles = createStyles(colors);
+
+  // Get moodFromRoute if passed
+  const moodFromRoute = route.params?.moodFromRoute;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -18,7 +21,7 @@ export default function Home({ navigation }) {
           Ready to get things done?
         </Text>
 
-        <Pressable onPress={() => navigation.navigate('Settings', { mood: 'happy' })}>
+        <Pressable onPress={() => navigation.navigate('Settings', { moodFromRoute })}>
           <LinearGradient
             colors={colors.gradientPrimary}
             style={styles.button}
@@ -27,12 +30,21 @@ export default function Home({ navigation }) {
           </LinearGradient>
         </Pressable>
 
-        <Pressable onPress={() => navigation.navigate('Auth')}>
+        <Pressable onPress={() => navigation.navigate('Auth', { moodFromRoute })}>
           <LinearGradient
             colors={colors.gradientSecondary}
             style={styles.button}
           >
             <Text style={styles.buttonText}>Auth</Text>
+          </LinearGradient>
+        </Pressable>
+
+        <Pressable onPress={() => navigation.navigate('MoodPlaylists', { mood: moodFromRoute })}>
+          <LinearGradient
+            colors={colors.gradientSecondary}
+            style={styles.button}
+          >
+            <Text style={styles.buttonText}>Music</Text>
           </LinearGradient>
         </Pressable>
       </View>

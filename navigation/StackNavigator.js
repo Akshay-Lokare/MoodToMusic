@@ -5,6 +5,7 @@ import useAppColors from "../Helpers/useAppColors";
 import Auth from "../Screens/Auth";
 import Home from "../Screens/Home";
 import Settings from "../Screens/Settings";
+import MoodPlaylists from "../Screens/MoodPlaylists";
 
 const Stack = createNativeStackNavigator();
 
@@ -41,6 +42,11 @@ export default function StackNavigator() {
         name="Settings"
         component={Settings}
         options={{ title: 'Settings' }}
+      />
+      <Stack.Screen
+        name="MoodPlaylists"
+        component={MoodPlaylists}
+        options={{ title: 'Mood Music' }}
       />
     </Stack.Navigator>
   );

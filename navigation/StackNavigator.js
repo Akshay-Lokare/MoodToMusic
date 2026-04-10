@@ -34,7 +34,7 @@ export default function StackNavigator() {
       <Stack.Screen
         name="Auth"
         component={Auth}
-        options={{ title: 'Auth' }}
+        options={{ headerShown: false, title: 'Auth' }}
       />
       <Stack.Screen
         name="Home"

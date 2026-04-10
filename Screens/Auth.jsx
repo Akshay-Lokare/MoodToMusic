@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, Button, TextInput, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -65,6 +65,7 @@ const createStyles = (colors) => StyleSheet.create({
     flex: 1,
     paddingHorizontal: 32,
     gap: 24,
+    justifyContent: 'center'
   },
   headerContainer: {
     marginBottom: 20,

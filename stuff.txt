@@ -48,3 +48,14 @@
 
 👉 This way, you’ll have a working MVP by midweek and can spend the last few days polishing or adding stretch features.
 Do you want me to draft the mood → playlist mapping table (e.g., Happy → “Happy Hits”, Sad → “Lo-Fi Chill”) so you can plug it in right away without worrying about API integration first?
+
+
+===========================
+1. Create an IOT device that get the heart-rate and suggest the songs by predicting the mood
+OR
+1. Use the apis from smart watch apis and then do this
+
+
+
+Mood translator for spotify and netflix using the IoT device (esp32)
+(what to avoid during a specific mood, like a mental health app)

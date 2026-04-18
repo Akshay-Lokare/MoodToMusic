@@ -37,7 +37,6 @@ export default function Home({ navigation, route }) {
             >
               <Text style={styles.username}>{authUsername || 'Hooman'}</Text>
             </TouchableOpacity>
-
           </View>
         </View>
 
@@ -134,13 +133,6 @@ const createStyles = (colors) => StyleSheet.create({
     fontWeight: '800',
     color: colors.textPrimary,
     letterSpacing: -0.5,
-  },
-  logoutButton: {
-    padding: 8,
-    backgroundColor: colors.surface,
-    borderRadius: 50,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   sectionTitle: {
     fontSize: 18,

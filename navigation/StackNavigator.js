@@ -1,5 +1,4 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useSelector } from "react-redux";
 import { Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import useAppColors from "../Helpers/useAppColors";
@@ -14,19 +13,19 @@ const Stack = createNativeStackNavigator();
 
 export default function StackNavigator() {
   const colors = useAppColors();
-  const isDark = useSelector((state) => state.theme.isDark);
 
   return (
     <Stack.Navigator
       initialRouteName="Auth"
       screenOptions={{
-        headerTitleAlign: 'center',
+        headerShown: true,
+        headerTitleAlign: "center",
         headerStyle: {
           backgroundColor: colors.surface,
         },
         headerTintColor: colors.textPrimary,
         headerTitleStyle: {
-          fontWeight: '600',
+          fontWeight: "600",
           color: colors.textPrimary,
         },
       }}
@@ -34,19 +33,23 @@ export default function StackNavigator() {
       <Stack.Screen
         name="Auth"
         component={Auth}
-        options={{ headerShown: false, title: 'Auth' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Home"
         component={Home}
         options={({ navigation }) => ({
-          title: 'Mood Music',
+          title: "Mood Music",
           headerRight: () => (
             <Pressable
-              onPress={() => navigation.navigate('Auth')}
+              onPress={() => navigation.navigate("Auth")}
               style={{ marginRight: 10 }}
             >
-              <Ionicons name="log-out-outline" size={24} color={colors.accentRed} />
+              <Ionicons
+                name="log-out-outline"
+                size={24}
+                color={colors.accentRed}
+              />
             </Pressable>
           ),
         })}
@@ -54,17 +57,17 @@ export default function StackNavigator() {
       <Stack.Screen
         name="Settings"
         component={Settings}
-        options={{ title: 'Settings' }}
+        options={{ title: "Settings" }}
       />
       <Stack.Screen
         name="MoodPlaylists"
         component={MoodPlaylists}
-        options={{ title: 'Mood Music' }}
+        options={{ title: "Mood Music" }}
       />
       <Stack.Screen
         name="Easter"
         component={Easter}
-        options={{ title: '???' }}
+        options={{ title: "???" }}
       />
     </Stack.Navigator>
   );

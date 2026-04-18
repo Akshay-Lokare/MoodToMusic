@@ -1,0 +1,437 @@
+// Pulse Sensor SEN-11574 + Seeed ESP32-C3
+// Wiring: S → D0 (GPIO2), + → 3V3, - → GND
+
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
+
+// ── BLE UART UUIDs ──────────────────────────────────────────────────────────
+#define SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+#define CHARACTERISTIC_UUID_TX "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
+#define CHARACTERISTIC_UUID_RX "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
+
+BLECharacteristic *pTxCharacteristic;
+BLECharacteristic *pRxCharacteristic;
+bool deviceConnected = false;
+
+void startMeasurement();       // defined below
+void requestMeasurementFromBle();  // defined below; BLE RX → same as Serial ENTER
+
+void sendToPhone(String msg) {
+  Serial.println(msg);
+  if (deviceConnected) {
+    pTxCharacteristic->setValue(msg.c_str());
+    pTxCharacteristic->notify();
+    delay(10);
+  }
+}
+
+class MyServerCallbacks : public BLEServerCallbacks {
+  void onConnect(BLEServer *pServer) {
+    deviceConnected = true;
+    sendToPhone("BLE Connected");
+  }
+  void onDisconnect(BLEServer *pServer) {
+    deviceConnected = false;
+    BLEDevice::startAdvertising();
+  }
+};
+
+class MyCallbacks : public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic *pCharacteristic) {
+    String rx = pCharacteristic->getValue().c_str();
+    if (rx.length() > 0) {
+      sendToPhone("CMD: " + rx);
+      requestMeasurementFromBle();
+    }
+  }
+};
+
+void setupBLE() {
+  BLEDevice::init("XIAO_HEART_MONITOR");
+  BLEServer *pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  pTxCharacteristic = pService->createCharacteristic(
+    CHARACTERISTIC_UUID_TX, BLECharacteristic::PROPERTY_NOTIFY);
+  pTxCharacteristic->addDescriptor(new BLE2902());
+
+  pRxCharacteristic = pService->createCharacteristic(
+    CHARACTERISTIC_UUID_RX, BLECharacteristic::PROPERTY_WRITE);
+  pRxCharacteristic->setCallbacks(new MyCallbacks());
+
+  pService->start();
+  BLEDevice::getAdvertising()->start();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Sensor parameters  — tuned for weak signal (swing ~400 ADC counts)
+// ════════════════════════════════════════════════════════════════════════════
+
+const int PULSE_PIN  = 2;
+const int OVERSAMPLE = 8;
+const int ADC_CLAMP  = 3900;
+
+// ── Smoothing ────────────────────────────────────────────────────────────────
+// 4 = most responsive; keeps fast transients visible on a weak signal
+const int SMOOTH_SIZE = 4;
+int   smoothBuf[SMOOTH_SIZE];
+int   smoothIdx = 0;
+long  smoothSum = 0;
+int   smoothed  = 0;
+
+// ── Adaptive baseline ────────────────────────────────────────────────────────
+// Faster alpha (0.005) so baseline settles within the first second
+// instead of drifting slowly all the way through the window.
+const float BASELINE_ALPHA = 0.005f;
+float baseline = 2048.0f;
+
+// ── Beat-detection: peak-above-baseline instead of dip-below ────────────────
+//
+// The previous code looked for DIPS below baseline, which works for sensors
+// that produce a downward pulse. The SEN-11574 on an ESP32 ADC typically
+// produces an UPWARD pulse (rising peak), so we detect PEAKS instead.
+//
+// threshold = baseline + (dynamic_range * PEAK_RATIO)
+// dynamic_range is tracked as an exponential moving average of recent swings,
+// seeded from the warm-up period so it's ready on the first beat.
+//
+// PEAK_RATIO: fraction of the live dynamic range above baseline needed to
+//             count as a beat.  0.30 = 30 % of the recent swing.
+//             Lower → more sensitive.  Range 0.20–0.60.
+const float PEAK_RATIO = 0.30f;
+
+float dynamicRange = 200.0f;  // ADC counts; updated every beat cycle
+const float RANGE_ALPHA = 0.10f; // how fast dynamic range adapts
+
+// ── Refractory period ────────────────────────────────────────────────────────
+// 300 ms → max ~200 BPM; safe for normal heart rates, blocks double-triggers
+const int REFRACTORY_MS = 300;
+
+// ── Timing ───────────────────────────────────────────────────────────────────
+// SETTLE_MS : signal stabilisation before counting starts
+// MEASURE_MS: active counting window
+const unsigned long SETTLE_MS  = 1500;
+const unsigned long MEASURE_MS = 6000;
+
+// ── Beat log ─────────────────────────────────────────────────────────────────
+const int MAX_BEATS = 40;
+float beatBPMs[MAX_BEATS];
+int   beatLogIdx  = 0;
+int   beatCount   = 0;
+
+// ── State ────────────────────────────────────────────────────────────────────
+bool          aboveThreshold  = false;
+unsigned long lastBeatTime    = 0;
+unsigned long windowStart     = 0;
+bool          measuring       = false;
+bool          warmedUp        = false;
+bool          pendingBleStart = false;
+unsigned long lastSampleTime  = 0;
+unsigned long startTime       = 0;
+int           lastSecondPrinted = -1;
+int           windowMin       = 4095;
+int           windowMax       = 0;
+
+// ── Live range tracking (for dynamic threshold) ───────────────────────────────
+int cycleMin = 4095;
+int cycleMax = 0;
+
+// ════════════════════════════════════════════════════════════════════════════
+// Oversampled ADC read
+// ════════════════════════════════════════════════════════════════════════════
+int oversampledRead() {
+  long sum   = 0;
+  int  count = 0;
+  for (int i = 0; i < OVERSAMPLE; i++) {
+    int v = analogRead(PULSE_PIN);
+    if (v < ADC_CLAMP) { sum += v; count++; }
+    delayMicroseconds(60);
+  }
+  return (count > 0) ? (int)(sum / count) : smoothed;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Outlier filter — discard BPMs more than 30 % away from median
+// ════════════════════════════════════════════════════════════════════════════
+float filteredAverage(float *arr, int n) {
+  if (n == 0) return 0;
+  if (n == 1) return arr[0];
+
+  // Bubble sort copy
+  float tmp[MAX_BEATS];
+  for (int i = 0; i < n; i++) tmp[i] = arr[i];
+  for (int i = 0; i < n - 1; i++)
+    for (int j = i + 1; j < n; j++)
+      if (tmp[j] < tmp[i]) { float t = tmp[i]; tmp[i] = tmp[j]; tmp[j] = t; }
+
+  float med = (n % 2 == 0)
+              ? (tmp[n / 2 - 1] + tmp[n / 2]) / 2.0f
+              : tmp[n / 2];
+
+  float sum   = 0;
+  int   count = 0;
+  for (int i = 0; i < n; i++) {
+    if (arr[i] >= med * 0.70f && arr[i] <= med * 1.30f) {
+      sum += arr[i];
+      count++;
+    }
+  }
+  return (count > 0) ? sum / (float)count : med;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Start measurement
+// ════════════════════════════════════════════════════════════════════════════
+void startMeasurement() {
+  beatCount         = 0;
+  beatLogIdx        = 0;
+  lastSecondPrinted = -1;
+  windowStart       = millis();
+  measuring         = true;
+  windowMin         = 4095;
+  windowMax         = 0;
+  cycleMin          = 4095;
+  cycleMax          = 0;
+  lastBeatTime      = 0;
+  aboveThreshold    = false;
+
+  for (int i = 0; i < MAX_BEATS; i++) beatBPMs[i] = 0;
+
+  sendToPhone("─────────────────────────────────");
+  sendToPhone("Measuring — hold still for 6 s");
+  sendToPhone("─────────────────────────────────");
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Finish measurement
+// ════════════════════════════════════════════════════════════════════════════
+void finishMeasurement() {
+  measuring = false;
+
+  sendToPhone("─────────────────────────────────");
+  sendToPhone("Signal swing: " + String(windowMax - windowMin) +
+              "  (min " + String(windowMin) +
+              " / max " + String(windowMax) + ")");
+  sendToPhone("Beats logged: " + String(beatLogIdx));
+
+  if (beatLogIdx >= 2) {
+    float avgBPM = filteredAverage(beatBPMs, beatLogIdx);
+    sendToPhone("Heart Rate: " + String((int)round(avgBPM)));
+  } else {
+    sendToPhone("Not enough beats — recheck sensor contact");
+    sendToPhone("Raw swing was " + String(windowMax - windowMin) +
+                " counts. Need > 100 for reliable detection.");
+  }
+
+  sendToPhone("─────────────────────────────────");
+  sendToPhone("Press ENTER to measure again...");
+}
+
+void requestMeasurementFromBle() {
+  if (measuring) {
+    sendToPhone("BLE start ignored: already measuring");
+    return;
+  }
+
+  if (!warmedUp) {
+    pendingBleStart = true;
+    sendToPhone("BLE start queued: waiting for warm-up");
+    return;
+  }
+
+  sendToPhone("BLE start accepted");
+  startMeasurement();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Setup
+// ════════════════════════════════════════════════════════════════════════════
+void setup() {
+  Serial.begin(115200);
+  delay(500);
+
+  setupBLE();
+
+  for (int i = 0; i < SMOOTH_SIZE; i++) smoothBuf[i] = 2048;
+  smoothSum = 2048L * SMOOTH_SIZE;
+  smoothed  = 2048;
+  baseline  = 2048.0f;
+
+  analogReadResolution(12);
+  analogSetAttenuation(ADC_11db);
+  analogSetPinAttenuation(PULSE_PIN, ADC_11db);
+
+  startTime = millis();
+
+  sendToPhone("=======================================");
+  sendToPhone("Pulse Sensor — GPIO2");
+  sendToPhone("Warming up 4 seconds...");
+  sendToPhone("=======================================");
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Main loop
+// ════════════════════════════════════════════════════════════════════════════
+void loop() {
+
+  // Serial pass-through
+  if (Serial.available()) {
+    String msg = Serial.readStringUntil('\n');
+    msg.trim();
+    if (msg.length() > 0) sendToPhone("Laptop: " + msg);
+  }
+
+  unsigned long now = millis();
+
+  // ── Warm-up (4 s) — build a stable baseline before anything else ─────────
+  if (!warmedUp) {
+    if (now - startTime < 4000) {
+      // Keep sampling during warm-up so baseline and dynamicRange are ready
+      if (now - lastSampleTime >= 5) {
+        lastSampleTime = now;
+        int raw = oversampledRead();
+
+        smoothSum -= smoothBuf[smoothIdx];
+        smoothBuf[smoothIdx] = raw;
+        smoothSum += raw;
+        smoothIdx = (smoothIdx + 1) % SMOOTH_SIZE;
+        smoothed  = (int)(smoothSum / SMOOTH_SIZE);
+
+        baseline += BASELINE_ALPHA * ((float)smoothed - baseline);
+
+        if (smoothed < cycleMin) cycleMin = smoothed;
+        if (smoothed > cycleMax) cycleMax = smoothed;
+
+        // Update dynamic range estimate every ~200 ms
+        static unsigned long lastRangeUpdate = 0;
+        if (now - lastRangeUpdate > 200) {
+          lastRangeUpdate = now;
+          int swing = cycleMax - cycleMin;
+          if (swing > 20) {  // only update on real signal, not noise floor
+            dynamicRange += RANGE_ALPHA * ((float)swing - dynamicRange);
+          }
+          cycleMin = 4095; cycleMax = 0;
+        }
+      }
+      return;
+    }
+
+    warmedUp = true;
+    baseline = (float)smoothed;
+    sendToPhone("Dynamic range estimate: " + String((int)dynamicRange) + " counts");
+    sendToPhone("Ready! Place finger on sensor and press ENTER...");
+
+    // If app sent "start" during warm-up, begin immediately once ready.
+    if (pendingBleStart && !measuring) {
+      pendingBleStart = false;
+      sendToPhone("Auto-starting queued BLE measurement");
+      startMeasurement();
+    }
+  }
+
+  // ── Idle ─────────────────────────────────────────────────────────────────
+  if (!measuring) {
+    // Still sample to keep baseline fresh while idle
+    if (now - lastSampleTime >= 5) {
+      lastSampleTime = now;
+      int raw = oversampledRead();
+      smoothSum -= smoothBuf[smoothIdx];
+      smoothBuf[smoothIdx] = raw;
+      smoothSum += raw;
+      smoothIdx = (smoothIdx + 1) % SMOOTH_SIZE;
+      smoothed  = (int)(smoothSum / SMOOTH_SIZE);
+      baseline += BASELINE_ALPHA * ((float)smoothed - baseline);
+    }
+
+    if (Serial.available() > 0) {
+      while (Serial.available()) Serial.read();
+      startMeasurement();
+    }
+    return;
+  }
+
+  // ── Active measurement ───────────────────────────────────────────────────
+  if (now - lastSampleTime >= 5) {
+    lastSampleTime = now;
+
+    int raw = oversampledRead();
+
+    smoothSum -= smoothBuf[smoothIdx];
+    smoothBuf[smoothIdx] = raw;
+    smoothSum += raw;
+    smoothIdx = (smoothIdx + 1) % SMOOTH_SIZE;
+    smoothed  = (int)(smoothSum / SMOOTH_SIZE);
+
+    // Track full-window signal range
+    if (smoothed < windowMin) windowMin = smoothed;
+    if (smoothed > windowMax) windowMax = smoothed;
+
+    // Track per-cycle range for dynamic threshold
+    if (smoothed < cycleMin) cycleMin = smoothed;
+    if (smoothed > cycleMax) cycleMax = smoothed;
+
+    // Adaptive baseline
+    baseline += BASELINE_ALPHA * ((float)smoothed - baseline);
+
+    // Update dynamic range every ~500 ms
+    static unsigned long lastRangeUpdate = 0;
+    if (now - lastRangeUpdate > 500) {
+      lastRangeUpdate = now;
+      int swing = cycleMax - cycleMin;
+      if (swing > 20) {
+        dynamicRange += RANGE_ALPHA * ((float)swing - dynamicRange);
+      }
+      cycleMin = 4095; cycleMax = 0;
+    }
+
+    // ── Peak detection ───────────────────────────────────────────────────
+    // Threshold = baseline + a fraction of the live signal range
+    // This self-adjusts: if your swing is 400 counts and PEAK_RATIO is 0.30,
+    // the signal must rise 120 counts above baseline to count as a beat.
+    int threshold = (int)(baseline + dynamicRange * PEAK_RATIO);
+    unsigned long timeSinceLast = now - lastBeatTime;
+
+    // Rising edge: signal crosses above threshold
+    if (smoothed > threshold && !aboveThreshold && timeSinceLast > REFRACTORY_MS) {
+      aboveThreshold = true;
+
+      unsigned long elapsed = now - windowStart;
+      bool inActiveWindow = (elapsed >= SETTLE_MS) &&
+                            (elapsed <  SETTLE_MS + MEASURE_MS);
+
+      if (inActiveWindow && lastBeatTime > 0 && timeSinceLast < 2000) {
+        float instantBPM = 60000.0f / (float)timeSinceLast;
+
+        if (instantBPM >= 40.0f && instantBPM <= 200.0f) {
+          beatCount++;
+          if (beatLogIdx < MAX_BEATS)
+            beatBPMs[beatLogIdx++] = instantBPM;
+        }
+      }
+
+      lastBeatTime = now;
+    }
+
+    // Falling edge: signal drops below threshold
+    if (smoothed < threshold && aboveThreshold)
+      aboveThreshold = false;
+  }
+
+  // ── Progress ticker (counts only active seconds, 1-based) ────────────────
+  unsigned long elapsed = now - windowStart;
+  if (elapsed >= SETTLE_MS) {
+    int activeSec = (int)((elapsed - SETTLE_MS) / 1000);
+    if (activeSec < 6 && activeSec != lastSecondPrinted) {
+      lastSecondPrinted = activeSec;
+      sendToPhone("Second " + String(activeSec + 1) +
+                  " / 6  | Beats so far: " + String(beatCount));
+    }
+  }
+
+  // ── End of window ─────────────────────────────────────────────────────────
+  if (elapsed >= SETTLE_MS + MEASURE_MS)
+    finishMeasurement();
+}
